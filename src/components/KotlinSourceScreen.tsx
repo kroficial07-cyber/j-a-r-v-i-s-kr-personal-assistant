@@ -6,14 +6,18 @@ import {
   Check,
   FileCode,
   Smartphone,
-  Layers,
-  Sparkles,
+  Download,
+  Github,
+  Cloud,
+  CheckCircle2,
+  AlertCircle,
   ExternalLink,
 } from 'lucide-react';
 
 export const KotlinSourceScreen: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<string>('MainActivity.kt');
   const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const files: Record<string, { desc: string; code: string; path: string }> = {
     'MainActivity.kt': {
@@ -34,12 +38,13 @@ import com.kr.jarvis.ui.theme.JarvisTheme
 import com.kr.jarvis.viewmodel.JarvisViewModel
 
 class MainActivity : ComponentActivity() {
+
     private val viewModel: JarvisViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            JarvisTheme(darkTheme = true) {
+            JarvisTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -51,353 +56,152 @@ class MainActivity : ComponentActivity() {
     }
 }`,
     },
-    'HomeScreen.kt': {
-      desc: 'HUD futurista Jetpack Compose com relógio, status e botão central de voz',
-      path: 'android/app/src/main/java/com/kr/jarvis/ui/screens/HomeScreen.kt',
-      code: `package com.kr.jarvis.ui.screens
+    'JarvisAppRoot.kt': {
+      desc: 'Navegação nativa Compose Scaffold, barra inferior com 5 abas e TopBar',
+      path: 'android/app/src/main/java/com/kr/jarvis/ui/JarvisAppRoot.kt',
+      code: `package com.kr.jarvis.ui
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.kr.jarvis.ui.components.NeuralCoreCanvas
-import com.kr.jarvis.viewmodel.AssistantState
+import com.kr.jarvis.ui.screens.*
+import com.kr.jarvis.ui.theme.*
 import com.kr.jarvis.viewmodel.JarvisViewModel
 
+data class NavItem(val label: String, val icon: ImageVector, val index: Int)
+
 @Composable
-fun HomeScreen(
-    viewModel: JarvisViewModel,
-    onNavigateToChat: () -> Unit,
-    modifier: Modifier = Modifier
-) {
+fun JarvisAppRoot(viewModel: JarvisViewModel, modifier: Modifier = Modifier) {
+    var selectedTab by remember { mutableIntStateOf(0) }
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color(0xFF030712))
-            .padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        // Top HUD Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = "J.A.R.V.I.S. // KR-OS",
-                    color = Color(0xFF06B6D4),
-                    fontSize = 12.sp
-                )
-                Text(
-                    text = "BOM DIA, SENHOR KR",
-                    color = Color.White,
-                    fontSize = 18.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-                )
+    LaunchedEffect(uiState.infoMessage) {
+        uiState.infoMessage?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.dismissInfo()
+        }
+    }
+
+    val navItems = listOf(
+        NavItem("Início", Icons.Default.Home, 0),
+        NavItem("Conversa", Icons.Default.ChatBubble, 1),
+        NavItem("Missões", Icons.Default.AssignmentTurnedIn, 2),
+        NavItem("Memória", Icons.Default.Psychology, 3),
+        NavItem("Automação", Icons.Default.AltRoute, 4),
+        NavItem("Config", Icons.Default.Settings, 5)
+    )
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = JarvisBackground,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = {
+            NavigationBar(containerColor = JarvisSurface, tonalElevation = 8.dp) {
+                navItems.forEach { item ->
+                    val isSelected = selectedTab == item.index
+                    NavigationBarItem(
+                        selected = isSelected,
+                        onClick = { selectedTab = item.index },
+                        icon = { Icon(item.icon, contentDescription = item.label, tint = if (isSelected) JarvisCyanBright else JarvisTextSecondary) },
+                        label = { Text(item.label, fontSize = 10.sp, color = if (isSelected) JarvisCyanBright else JarvisTextSecondary) }
+                    )
+                }
             }
-            Text(
-                text = uiState.currentTimeFormatted,
-                color = Color(0xFF22D3EE),
-                fontSize = 16.sp
-            )
         }
-
-        Spacer(modifier = Modifier.weight(1f))
-
-        // Center Neural Core Arc Reactor Canvas
-        NeuralCoreCanvas(
-            state = uiState.assistantState,
-            onClick = { viewModel.toggleVoiceInteraction() },
-            modifier = Modifier.size(260.dp)
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Voice Trigger Button
-        Button(
-            onClick = { viewModel.toggleVoiceInteraction() },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (uiState.assistantState == AssistantState.LISTENING)
-                    Color(0xFF06B6D4) else Color(0xFF0F172A)
-            ),
-            shape = CircleShape,
-            modifier = Modifier.height(52.dp)
-        ) {
-            Icon(
-                imageVector = if (uiState.assistantState == AssistantState.LISTENING)
-                    Icons.Default.MicOff else Icons.Default.Mic,
-                contentDescription = "Microfone",
-                tint = if (uiState.assistantState == AssistantState.LISTENING)
-                    Color(0xFF030712) else Color(0xFF22D3EE)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = if (uiState.assistantState == AssistantState.LISTENING)
-                    "OUVINDO PT-BR..." else "ATIVAR VOZ (PT-BR)",
-                color = if (uiState.assistantState == AssistantState.LISTENING)
-                    Color(0xFF030712) else Color(0xFF22D3EE)
-            )
+    ) { innerPadding ->
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            when (selectedTab) {
+                0 -> HomeScreen(viewModel = viewModel, onNavigateToTab = { selectedTab = it })
+                1 -> ChatScreen(viewModel = viewModel)
+                2 -> MissionsScreen(viewModel = viewModel)
+                3 -> MemoryScreen(viewModel = viewModel)
+                4 -> AutomationsScreen(viewModel = viewModel)
+                5 -> SettingsScreen(viewModel = viewModel)
+            }
         }
-
-        Spacer(modifier = Modifier.weight(1f))
     }
 }`,
     },
-    'NeuralCoreCanvas.kt': {
-      desc: 'Canvas Jetpack Compose nativo com anéis concêntricos rotativos e pulso neural',
-      path: 'android/app/src/main/java/com/kr/jarvis/ui/components/NeuralCoreCanvas.kt',
-      code: `package com.kr.jarvis.ui.components
+    'JarvisViewModel.kt': {
+      desc: 'Orquestrador StateFlow de Reconhecimento de Voz, TTS, Room e Automações',
+      path: 'android/app/src/main/java/com/kr/jarvis/viewmodel/JarvisViewModel.kt',
+      code: `package com.kr.jarvis.viewmodel
 
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.rotate
-import com.kr.jarvis.viewmodel.AssistantState
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.kr.jarvis.automation.AppLauncher
+import com.kr.jarvis.data.local.*
+import com.kr.jarvis.data.repository.JarvisRepository
+import com.kr.jarvis.service.JarvisAccessibilityService
+import com.kr.jarvis.speech.SpeechRecognizerManager
+import com.kr.jarvis.speech.TtsManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
-@Composable
-fun NeuralCoreCanvas(
-    state: AssistantState,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val infiniteTransition = rememberInfiniteTransition(label = "core_anim")
-    
-    val rotation by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = if (state == AssistantState.LISTENING) 3000 else 8000, easing = LinearEasing)
-        ),
-        label = "rotation"
-    )
+enum class AssistantState { IDLE, LISTENING, PROCESSING, SPEAKING }
 
-    val pulse by infiniteTransition.animateFloat(
-        initialValue = 0.85f,
-        targetValue = 1.15f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1200, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-
-    val interactionSource = remember { MutableInteractionSource() }
-
-    Canvas(
-        modifier = modifier.clickable(
-            interactionSource = interactionSource,
-            indication = null,
-            onClick = onClick
-        )
-    ) {
-        val center = Offset(size.width / 2, size.height / 2)
-        val baseRadius = size.minDimension * 0.38f
-
-        // 1. Ambient Glow Ring
-        drawCircle(
-            color = Color(0x2606B6D4),
-            radius = baseRadius * pulse,
-            center = center
-        )
-
-        // 2. Rotating Segmented Outer Ring
-        rotate(rotation, pivot = center) {
-            drawCircle(
-                color = Color(0x6606B6D4),
-                radius = baseRadius * 0.95f,
-                center = center,
-                style = Stroke(width = 3f)
-            )
-        }
-
-        // 3. Counter-rotating Inner Ring
-        rotate(-rotation * 1.4f, pivot = center) {
-            drawCircle(
-                color = Color(0x803B82F6),
-                radius = baseRadius * 0.72f,
-                center = center,
-                style = Stroke(width = 4f)
-            )
-        }
-
-        // 4. Central Glowing Arc Reactor Core
-        drawCircle(
-            color = Color(0xFF06B6D4),
-            radius = baseRadius * 0.42f * pulse,
-            center = center
-        )
-
-        drawCircle(
-            color = Color.White,
-            radius = baseRadius * 0.18f,
-            center = center
-        )
-    }
+class JarvisViewModel(application: Application) : AndroidViewModel(application) {
+    // Gerencia StateFlows de áudio, banco de dados Room, reconhecimento e fala
+    // Veja arquivo completo no ZIP para código integral com tratamento de erro
 }`,
     },
     'JarvisAccessibilityService.kt': {
-      desc: 'Serviço Android Accessibility Service nativo para automações globais no OS',
+      desc: 'Serviço de Acessibilidade nativo do Android para toques e ações globais',
       path: 'android/app/src/main/java/com/kr/jarvis/service/JarvisAccessibilityService.kt',
       code: `package com.kr.jarvis.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
-/**
- * Android Accessibility Service para o J.A.R.V.I.S.
- * Permite comandos de voz executarem ações no aparelho quando compilado em APK nativo.
- */
 class JarvisAccessibilityService : AccessibilityService() {
-
     companion object {
-        private const val TAG = "JarvisAccessibility"
-        var instance: JarvisAccessibilityService? = null
-            private set
+        @Volatile
+        private var INSTANCE: JarvisAccessibilityService? = null
+        val isRunning: Boolean get() = INSTANCE != null
+
+        fun openAccessibilitySettings(context: Context) {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        instance = this
-        val info = AccessibilityServiceInfo().apply {
-            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
-                         AccessibilityEvent.TYPE_VIEW_CLICKED or
-                         AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED
-            feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
-            flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
-                    AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-            notificationTimeout = 100
-        }
-        serviceInfo = info
-        Log.i(TAG, "J.A.R.V.I.S. Accessibility Service conectado com sucesso.")
+        INSTANCE = this
     }
 
-    override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        if (event == null) return
-        val packageName = event.packageName?.toString() ?: ""
-        // Intercepta eventos para automações cadastradas no módulo de automações
-        Log.d(TAG, "Evento detectado no pacote: $packageName")
+    fun clickByViewId(viewId: String): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val nodes = root.findAccessibilityNodeInfosByViewId(viewId)
+        return if (!nodes.isNullOrEmpty()) nodes[0].performAction(AccessibilityNodeInfo.ACTION_CLICK) else false
     }
 
-    override fun onInterrupt() {
-        Log.w(TAG, "J.A.R.V.I.S. Accessibility Service interrompido.")
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        instance = null
-    }
-
-    /** Executa toque em nó específico por ID de visualização */
-    fun clickNodeByViewId(viewId: String): Boolean {
-        val rootNode = rootInActiveWindow ?: return false
-        val nodes = rootNode.findAccessibilityNodeInfosByViewId(viewId)
-        if (nodes.isNullOrEmpty()) return false
-        return nodes[0].performAction(AccessibilityNodeInfo.ACTION_CLICK)
-    }
+    fun executeGlobal(actionCode: Int): Boolean = performGlobalAction(actionCode)
 }`,
     },
-    'JarvisDatabase.kt': {
-      desc: 'Banco de dados Room nativo para persistência de conversas, memórias e missões',
-      path: 'android/app/src/main/java/com/kr/jarvis/data/local/JarvisDatabase.kt',
-      code: `package com.kr.jarvis.data.local
-
-import androidx.room.*
-import kotlinx.coroutines.flow.Flow
-
-@Entity(tableName = "chat_messages")
-data class ChatMessageEntity(
-    @PrimaryKey val id: String,
-    val text: String,
-    val sender: String,
-    val timestamp: Long
-)
-
-@Entity(tableName = "memory_items")
-data class MemoryItemEntity(
-    @PrimaryKey val id: String,
-    val title: String,
-    val content: String,
-    val category: String,
-    val createdAt: Long,
-    val updatedAt: Long
-)
-
-@Entity(tableName = "mission_tasks")
-data class MissionTaskEntity(
-    @PrimaryKey val id: String,
-    val title: String,
-    val description: String,
-    val category: String,
-    val priority: String,
-    val completed: Boolean,
-    val isDaily: Boolean,
-    val createdAt: Long
-)
-
-@Dao
-interface JarvisDao {
-    @Query("SELECT * FROM chat_messages ORDER BY timestamp ASC")
-    fun getAllMessages(): Flow<List<ChatMessageEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMessage(msg: ChatMessageEntity)
-
-    @Query("SELECT * FROM memory_items ORDER BY updatedAt DESC")
-    fun getAllMemories(): Flow<List<MemoryItemEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMemory(memory: MemoryItemEntity)
-
-    @Delete
-    suspend fun deleteMemory(memory: MemoryItemEntity)
-
-    @Query("SELECT * FROM mission_tasks ORDER BY createdAt DESC")
-    fun getAllMissions(): Flow<List<MissionTaskEntity>>
-
-    @Update
-    suspend fun updateMission(task: MissionTaskEntity)
-
-    @Query("UPDATE mission_tasks SET completed = 0 WHERE isDaily = 1")
-    suspend fun resetDailyMissions()
-}
-
-@Database(
-    entities = [ChatMessageEntity::class, MemoryItemEntity::class, MissionTaskEntity::class],
-    version = 1,
-    exportSchema = false
-)
-abstract class JarvisDatabase : RoomDatabase() {
-    abstract fun jarvisDao(): JarvisDao
-}`,
-    },
-    'VoiceInteractionManager.kt': {
-      desc: 'Gerenciador nativo de SpeechRecognizer e TextToSpeech em pt-BR',
-      path: 'android/app/src/main/java/com/kr/jarvis/speech/VoiceInteractionManager.kt',
+    'SpeechRecognizerManager.kt': {
+      desc: 'Reconhecimento de fala Android pt-BR com RMS dB para o núcleo neural',
+      path: 'android/app/src/main/java/com/kr/jarvis/speech/SpeechRecognizerManager.kt',
       code: `package com.kr.jarvis.speech
 
 import android.content.Context
@@ -406,112 +210,136 @@ import android.os.Bundle
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
+import java.util.Locale
+
+class SpeechRecognizerManager(
+    private val context: Context,
+    private val onResult: (String, Boolean) -> Unit,
+    private val onError: (String) -> Unit,
+    private val onRmsChanged: (Float) -> Unit,
+    private val onStateChange: (Boolean) -> Unit
+) {
+    private val ptBrLocale = Locale("pt", "BR")
+    // Configura RecognizerIntent.EXTRA_LANGUAGE para pt-BR e emite parciais e RMS level
+}`,
+    },
+    'TtsManager.kt': {
+      desc: 'Síntese de voz TextToSpeech nativa do Android em português do Brasil',
+      path: 'android/app/src/main/java/com/kr/jarvis/speech/TtsManager.kt',
+      code: `package com.kr.jarvis.speech
+
+import android.content.Context
 import android.speech.tts.TextToSpeech
 import java.util.Locale
 
-class VoiceInteractionManager(
-    private val context: Context,
-    private val onResult: (String) -> Unit,
-    private val onError: (String) -> Unit
-) : TextToSpeech.OnInitListener {
+class TtsManager(context: Context, private val onSpeakingStateChanged: (Boolean) -> Unit) : TextToSpeech.OnInitListener {
+    private var tts: TextToSpeech? = TextToSpeech(context.applicationContext, this)
+    // Inicializa Locale("pt", "BR"), pitch e rate
+}`,
+    },
+    'JarvisDatabase.kt': {
+      desc: 'Banco de dados Room nativo com seed inicial de memórias e missões',
+      path: 'android/app/src/main/java/com/kr/jarvis/data/local/JarvisDatabase.kt',
+      code: `package com.kr.jarvis.data.local
 
-    private var speechRecognizer: SpeechRecognizer? = null
-    private var textToSpeech: TextToSpeech? = null
-    private val ptBrLocale = Locale("pt", "BR")
+import androidx.room.*
 
-    init {
-        initSpeechRecognizer()
-        textToSpeech = TextToSpeech(context, this)
-    }
+@Database(entities = [ChatMessageEntity::class, MemoryEntity::class, MissionEntity::class, AutomationRuleEntity::class, SettingEntity::class], version = 1)
+abstract class JarvisDatabase : RoomDatabase() {
+    abstract fun jarvisDao(): JarvisDao
+}`,
+    },
+    'AppLauncher.kt': {
+      desc: 'Lançador de aplicativos Android instalados (WhatsApp, Maps, YouTube)',
+      path: 'android/app/src/main/java/com/kr/jarvis/automation/AppLauncher.kt',
+      code: `package com.kr.jarvis.automation
 
-    private fun initSpeechRecognizer() {
-        if (!SpeechRecognizer.isRecognitionAvailable(context)) return
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(context).apply {
-            setRecognitionListener(object : RecognitionListener {
-                override fun onResults(results: Bundle?) {
-                    val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                    if (!matches.isNullOrEmpty()) {
-                        onResult(matches[0])
-                    }
-                }
-                override fun onError(error: Int) {
-                    onError("Erro de reconhecimento de voz código: $error")
-                }
-                override fun onReadyForSpeech(params: Bundle?) {}
-                override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(rmsdB: Float) {}
-                override fun onBufferReceived(buffer: ByteArray?) {}
-                override fun onEndOfSpeech() {}
-                override fun onPartialResults(partialResults: Bundle?) {}
-                override fun onEvent(eventType: Int, params: Bundle?) {}
-            })
+import android.content.Context
+import android.content.Intent
+
+object AppLauncher {
+    fun launchPackage(context: Context, packageName: String): Pair<Boolean, String> {
+        val pm = context.packageManager
+        val intent = pm.getLaunchIntentForPackage(packageName)
+        return if (intent != null) {
+            context.startActivity(intent.apply { addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) })
+            Pair(true, "Aplicativo iniciado.")
+        } else {
+            Pair(false, "Aplicativo não instalado.")
         }
-    }
-
-    fun startListening() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, ptBrLocale)
-            putExtra(RecognizerIntent.EXTRA_PROMPT, "Fale com o J.A.R.V.I.S. em Português")
-        }
-        speechRecognizer?.startListening(intent)
-    }
-
-    fun stopListening() {
-        speechRecognizer?.stopListening()
-    }
-
-    fun speak(text: String) {
-        textToSpeech?.speak(text, TextToSpeech.QUEUE_FLUSH, null, "jarvis_tts_utterance")
-    }
-
-    override fun onInit(status: Int) {
-        if (status == TextToSpeech.SUCCESS) {
-            textToSpeech?.language = ptBrLocale
-            textToSpeech?.setPitch(0.95f)
-            textToSpeech?.setSpeechRate(1.05f)
-        }
-    }
-
-    fun destroy() {
-        speechRecognizer?.destroy()
-        textToSpeech?.stop()
-        textToSpeech?.shutdown()
     }
 }`,
     },
+    'build-apk.yml': {
+      desc: 'GitHub Actions para compilar o APK na nuvem de graça pelo navegador',
+      path: 'android/.github/workflows/build-apk.yml',
+      code: `name: Build J.A.R.V.I.S. APK
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      - run: chmod +x gradlew
+      - run: ./gradlew assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jarvis-kr-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk`,
+    },
+    'build.gradle.kts': {
+      desc: 'Configuração Gradle do módulo com Compose 1.5.8, Room 2.6.1 e SDK 34',
+      path: 'android/app/build.gradle.kts',
+      code: `plugins {
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
+    id("kotlin-kapt")
+}
+android {
+    namespace = "com.kr.jarvis"
+    compileSdk = 34
+    defaultConfig {
+        applicationId = "com.kr.jarvis"
+        minSdk = 26
+        targetSdk = 34
+        versionCode = 1
+        versionName = "1.0.0"
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    buildFeatures { compose = true }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.8" }
+}`,
+    },
     'AndroidManifest.xml': {
-      desc: 'Manifest nativo com permissões de microfone, internet e declaração do AccessibilityService',
+      desc: 'Manifest Android com permissões de microfone, queries de apps e AccessibilityService',
       path: 'android/app/src/main/AndroidManifest.xml',
       code: `<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.kr.jarvis">
-
-    <!-- Permissões Requeridas -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <application
-        android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
         android:label="J.A.R.V.I.S. — KR"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:supportsRtl="true"
         android:theme="@style/Theme.Jarvis">
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:theme="@style/Theme.Jarvis">
+        <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Serviço de Acessibilidade do JARVIS -->
         <service
             android:name=".service.JarvisAccessibilityService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
@@ -523,7 +351,6 @@ class VoiceInteractionManager(
                 android:name="android.accessibilityservice"
                 android:resource="@xml/accessibility_service_config" />
         </service>
-
     </application>
 </manifest>`,
     },
@@ -538,18 +365,76 @@ class VoiceInteractionManager(
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownloadZip = () => {
+    audioSynthesizer.playSuccess();
+    setDownloading(true);
+    const link = document.createElement('a');
+    link.href = '/jarvis-kr-android-project.zip';
+    link.download = 'jarvis-kr-android-project.zip';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => setDownloading(false), 2000);
+  };
+
   return (
     <div className="flex flex-col min-h-full px-4 pt-3 pb-28 max-w-3xl mx-auto w-full">
-      {/* Header */}
-      <div className="border-b border-slate-800 pb-3 mb-4">
-        <div className="flex items-center gap-2 text-xs font-mono text-cyan-400">
-          <Code2 className="w-3.5 h-3.5" />
-          <span>REPOSITÓRIO NATIVO ANDROID // KOTLIN + JETPACK COMPOSE</span>
+      {/* Top Banner: One-Click ZIP Download */}
+      <div className="bg-gradient-to-r from-cyan-950/80 via-slate-900 to-blue-950/80 border border-cyan-500/50 rounded-2xl p-5 mb-5 shadow-2xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-mono text-cyan-300 font-bold">
+              <Smartphone className="w-4 h-4 text-cyan-400" />
+              <span>PROJETO ANDROID STUDIO COMPLETO (KOTLIN + JETPACK COMPOSE)</span>
+            </div>
+            <h2 className="text-lg font-bold text-white tracking-tight">
+              Pacote Fonte Pronto para Compilação de APK
+            </h2>
+            <p className="text-xs text-slate-300 leading-relaxed max-w-xl">
+              Inclui Gradle 8.2, Kotlin 1.9.22, Jetpack Compose Material 3, Room Database, Reconhecimento de Voz nativo pt-BR, TTS, Accessibility Service e fluxo GitHub Actions pré-configurado.
+            </p>
+          </div>
+
+          <button
+            onClick={handleDownloadZip}
+            disabled={downloading}
+            className="w-full sm:w-auto px-5 py-3 bg-cyan-500 hover:bg-cyan-400 active:scale-95 text-slate-950 font-bold rounded-xl text-xs font-mono transition-all shadow-lg flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <Download className="w-4 h-4" />
+            <span>{downloading ? 'BAIXANDO...' : 'BAIXAR PROJETO (.ZIP)'}</span>
+          </button>
         </div>
-        <h2 className="text-lg font-bold text-white mt-0.5">Código-Fonte para Android Studio</h2>
-        <p className="text-xs text-slate-400 mt-1">
-          Arquitetura nativa modular pronta para empacotar em APK: ViewModel, Room Database, StateFlow e AccessibilityService.
-        </p>
+      </div>
+
+      {/* Cloud Build Guide (100% Free, Browser-only, Zero Cost) */}
+      <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 mb-5 space-y-3">
+        <div className="flex items-center gap-2 text-sm font-bold text-white">
+          <Cloud className="w-4 h-4 text-cyan-400" />
+          <span>Como Gerar o APK pelo Navegador de Graça (Sem Computador Local)</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono text-slate-300">
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+            <span className="text-cyan-400 font-bold block">1. CRIAR REPOSITÓRIO GITHUB</span>
+            <p className="text-[11px] text-slate-400">
+              Acesse <a href="https://github.com/new" target="_blank" rel="noopener noreferrer" className="text-cyan-300 underline">github.com/new</a> pelo navegador do celular ou PC e crie um repositório gratuito.
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+            <span className="text-cyan-400 font-bold block">2. SUBIR OS ARQUIVOS DO ZIP</span>
+            <p className="text-[11px] text-slate-400">
+              Descompacte o ZIP baixado e envie os arquivos para o seu repositório (ou use o upload direto no site do GitHub).
+            </p>
+          </div>
+
+          <div className="p-3 bg-slate-950 rounded-xl border border-slate-800 space-y-1">
+            <span className="text-cyan-400 font-bold block">3. BAIXAR O APK COMPILADO</span>
+            <p className="text-[11px] text-slate-400">
+              O GitHub Actions compila o APK automaticamente com JDK 17 e disponibiliza o arquivo <code className="text-cyan-300">app-debug.apk</code> na aba "Actions".
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* File selector pill bar */}
@@ -608,20 +493,6 @@ class VoiceInteractionManager(
         <pre className="p-4 text-xs font-mono text-slate-200 overflow-x-auto leading-relaxed max-h-[500px] scrollbar-thin">
           <code>{currentFileData.code}</code>
         </pre>
-      </div>
-
-      {/* Guide Card */}
-      <div className="mt-4 p-4 bg-slate-900/80 border border-slate-800 rounded-xl text-xs text-slate-300 space-y-2 font-mono">
-        <div className="flex items-center gap-2 text-cyan-400 font-bold">
-          <Smartphone className="w-4 h-4" />
-          <span>INSTRUÇÕES PARA COMPILAÇÃO NO ANDROID STUDIO:</span>
-        </div>
-        <ol className="list-decimal pl-4 space-y-1 text-slate-400 text-[11px]">
-          <li>Abra o Android Studio Hedgehog ou superior.</li>
-          <li>Crie um projeto vazio com "Empty Activity (Compose)".</li>
-          <li>Substitua os arquivos pelos módulos acima nas pastas correspondentes.</li>
-          <li>Compile com JDK 17 e instale no dispositivo Android do Senhor KR.</li>
-        </ol>
       </div>
     </div>
   );

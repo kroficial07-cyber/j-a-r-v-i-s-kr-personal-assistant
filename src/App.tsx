@@ -35,6 +35,7 @@ import {
   VolumeX,
   AlertCircle,
   X,
+  Download,
 } from 'lucide-react';
 
 export default function App() {
@@ -394,6 +395,17 @@ export default function App() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Download Android Project ZIP */}
+          <a
+            href="/jarvis-kr-android-project.zip"
+            download="jarvis-kr-android-project.zip"
+            onClick={() => audioSynthesizer.playSuccess()}
+            className="flex items-center gap-1.5 px-3 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 hover:text-white transition-colors"
+          >
+            <Download className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Baixar Projeto Android (.ZIP)</span>
+          </a>
+
           {/* Sound Mute Toggle */}
           <button
             onClick={() => {

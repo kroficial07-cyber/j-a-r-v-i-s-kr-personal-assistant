@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">J.A.R.V.I.S. — KR</string>
+    <string name="accessibility_service_label">J.A.R.V.I.S. Automações &amp; Assistência</string>
+    <string name="accessibility_service_description">Permite que o assistente execute toques autorizados, abra aplicativos e ofereça comandos de voz acessíveis para o Senhor KR.</string>
+</resources>

@@ -227,6 +227,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </section>
 
+      {/* Android Studio ZIP Project Banner */}
+      <section className="mt-4 p-3.5 bg-gradient-to-r from-slate-900 via-cyan-950/40 to-slate-900 border border-cyan-500/40 rounded-xl flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-cyan-950 border border-cyan-500/40 flex items-center justify-center shrink-0">
+            <Cpu className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div>
+            <div className="text-xs font-bold text-white tracking-wide">Projeto Android Nativo (.ZIP)</div>
+            <div className="text-[11px] text-slate-300">Código Kotlin + Compose pronto para compilar APK</div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => {
+            audioSynthesizer.playTap();
+            onNavigateToTab('kotlin_source');
+          }}
+          className="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold rounded-lg text-xs font-mono transition-colors shrink-0"
+        >
+          Ver / Baixar ZIP
+        </button>
+      </section>
+
       {/* Status Bar */}
       <footer className="mt-4 pt-3 border-t border-slate-900 flex items-center justify-between text-[11px] font-mono text-slate-400">
         <div className="flex items-center gap-2">

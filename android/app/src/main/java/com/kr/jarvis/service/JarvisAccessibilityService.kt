@@ -2,28 +2,39 @@ package com.kr.jarvis.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
 
-/**
- * JarvisAccessibilityService
- * Subserviço de automação nativa desacoplado da interface.
- * Monitora eventos do sistema Android e executa toques/ações globais.
- */
 class JarvisAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "JarvisAccessibility"
-        var instance: JarvisAccessibilityService? = null
-            private set
 
-        fun isRunning(): Boolean = instance != null
+        @Volatile
+        private var INSTANCE: JarvisAccessibilityService? = null
+
+        val isRunning: Boolean
+            get() = INSTANCE != null
+
+        fun getInstance(): JarvisAccessibilityService? = INSTANCE
+
+        /** Abre as configurações de acessibilidade do Android para o usuário autorizar explicitamente */
+        fun openAccessibilitySettings(context: Context) {
+            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            context.startActivity(intent)
+        }
     }
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        instance = this
+        INSTANCE = this
+
         val info = AccessibilityServiceInfo().apply {
             eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
                     AccessibilityEvent.TYPE_VIEW_CLICKED or
@@ -31,42 +42,52 @@ class JarvisAccessibilityService : AccessibilityService() {
             feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
             flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
                     AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS
-            notificationTimeout = 80
+            notificationTimeout = 100
         }
         serviceInfo = info
-        Log.i(TAG, "JarvisAccessibilityService conectado com sucesso.")
+        Log.i(TAG, "JarvisAccessibilityService conectado com sucesso pelo usuário.")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         if (event == null) return
-        val pkg = event.packageName?.toString() ?: ""
-        // Roteamento seguro de eventos para automações cadastradas
-        Log.d(TAG, "Evento interceptado no pacote: $pkg")
+        val packageName = event.packageName?.toString() ?: ""
+        // Interceptação segura e contextual: não armazena nem envia dados sensíveis
+        Log.d(TAG, "Evento de acessibilidade em: $packageName (Tipo: ${event.eventType})")
     }
 
     override fun onInterrupt() {
-        Log.w(TAG, "JarvisAccessibilityService interrompido pelo usuário.")
+        Log.w(TAG, "JarvisAccessibilityService interrompido.")
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        instance = null
+        INSTANCE = null
     }
 
-    /**
-     * Executa toque em nó por View ID
-     */
-    fun performClick(viewId: String): Boolean {
+    /** Executa clique em nó da interface por View ID */
+    fun clickByViewId(viewId: String): Boolean {
         val root = rootInActiveWindow ?: return false
         val nodes = root.findAccessibilityNodeInfosByViewId(viewId)
         if (nodes.isNullOrEmpty()) return false
-        return nodes[0].performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        val target = nodes[0]
+        val result = target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        target.recycle()
+        return result
     }
 
-    /**
-     * Executa ação global do sistema (ex: voltar, início, notificações)
-     */
-    fun triggerGlobalAction(actionCode: Int): Boolean {
+    /** Executa clique em botão/elemento contendo determinado texto */
+    fun clickByText(text: String): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val nodes = root.findAccessibilityNodeInfosByText(text)
+        if (nodes.isNullOrEmpty()) return false
+        val target = nodes[0]
+        val result = target.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+        target.recycle()
+        return result
+    }
+
+    /** Executa ação global do sistema (ex: voltar, home, notificações) */
+    fun executeGlobal(actionCode: Int): Boolean {
         return performGlobalAction(actionCode)
     }
 }
