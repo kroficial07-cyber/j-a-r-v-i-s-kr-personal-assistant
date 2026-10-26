@@ -1,0 +1,10 @@
+{
+  "name": "J.A.R.V.I.S. — KR Personal Assistant",
+  "description": "Assistente pessoal inteligente futurista para Android com tema escuro ciano, núcleo neural animado, comando de voz pt-BR, missões diárias, memórias locais e arquitetura modular de automação.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
