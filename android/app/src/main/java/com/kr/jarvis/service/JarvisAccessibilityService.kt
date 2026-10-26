@@ -151,7 +151,7 @@ class JarvisAccessibilityService : AccessibilityService() {
 
         for (node in nodes) {
             val nodeText = node.text?.toString() ?: ""
-            val matches = if (exactMatch) nodeText.equals(text, ignoreCase = true) else true
+            val matches = if (exactMatch) nodeText.equals(text, ignoreCase = true) else nodeText.contains(text, ignoreCase = true)
             if (matches && performClickOnNodeOrParent(node)) {
                 recycleNodes(nodes)
                 return true
