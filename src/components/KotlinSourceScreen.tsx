@@ -158,28 +158,52 @@ class JarvisViewModel(application: Application) : AndroidViewModel(application) 
 }`,
     },
     'JarvisAccessibilityService.kt': {
-      desc: 'Serviço de Acessibilidade nativo do Android para toques e ações globais',
+      desc: 'Serviço de Acessibilidade nativo do Android para toques e ações globais com verificação de permissão',
       path: 'android/app/src/main/java/com/kr/jarvis/service/JarvisAccessibilityService.kt',
       code: `package com.kr.jarvis.service
 
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.provider.Settings
+import android.text.TextUtils
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class JarvisAccessibilityService : AccessibilityService() {
     companion object {
         @Volatile
-        private var INSTANCE: JarvisAccessibilityService? = null
-        val isRunning: Boolean get() = INSTANCE != null
+        private var instance: JarvisAccessibilityService? = null
+        private val _isServiceActive = MutableStateFlow(false)
+        val isServiceActive: StateFlow<Boolean> = _isServiceActive.asStateFlow()
 
+        val isRunning: Boolean get() = instance != null
+        fun getInstance(): JarvisAccessibilityService? = instance
+
+        /** Verifica permissão concedida nas configurações do Android */
+        fun isAccessibilityPermissionGranted(context: Context): Boolean {
+            val expected = ComponentName(context, JarvisAccessibilityService::class.java)
+            val enabledServices = Settings.Secure.getString(
+                context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+            ) ?: return false
+            val splitter = TextUtils.SimpleStringSplitter(':').apply { setString(enabledServices) }
+            while (splitter.hasNext()) {
+                if (ComponentName.unflattenFromString(splitter.next()) == expected) return true
+            }
+            return false
+        }
+
+        /** Abre tela de acessibilidade para autorização explícita do usuário */
         fun openAccessibilitySettings(context: Context) {
             val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             context.startActivity(intent)
         }
@@ -187,16 +211,67 @@ class JarvisAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        INSTANCE = this
+        instance = this
+        _isServiceActive.value = true
+        serviceInfo = AccessibilityServiceInfo().apply {
+            eventTypes = AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED or
+                    AccessibilityEvent.TYPE_VIEW_CLICKED or
+                    AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED or
+                    AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED
+            feedbackType = AccessibilityServiceInfo.FEEDBACK_GENERIC
+            flags = AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS or
+                    AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS or
+                    AccessibilityServiceInfo.FLAG_DEFAULT
+            notificationTimeout = 100
+        }
     }
 
     fun clickByViewId(viewId: String): Boolean {
         val root = rootInActiveWindow ?: return false
         val nodes = root.findAccessibilityNodeInfosByViewId(viewId)
-        return if (!nodes.isNullOrEmpty()) nodes[0].performAction(AccessibilityNodeInfo.ACTION_CLICK) else false
+        if (nodes.isNullOrEmpty()) return false
+        for (node in nodes) {
+            if (performClick(node)) return true
+        }
+        return false
+    }
+
+    fun clickByText(text: String): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val nodes = root.findAccessibilityNodeInfosByText(text)
+        if (nodes.isNullOrEmpty()) return false
+        for (node in nodes) {
+            if (performClick(node)) return true
+        }
+        return false
+    }
+
+    fun inputTextByViewId(viewId: String, text: String): Boolean {
+        val root = rootInActiveWindow ?: return false
+        val nodes = root.findAccessibilityNodeInfosByViewId(viewId) ?: return false
+        if (nodes.isEmpty()) return false
+        val args = Bundle().apply { putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text) }
+        return nodes[0].performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, args)
     }
 
     fun executeGlobal(actionCode: Int): Boolean = performGlobalAction(actionCode)
+
+    private fun performClick(node: AccessibilityNodeInfo?): Boolean {
+        var current = node
+        while (current != null) {
+            if (current.isClickable) return current.performAction(AccessibilityNodeInfo.ACTION_CLICK)
+            current = current.parent
+        }
+        return false
+    }
+
+    override fun onAccessibilityEvent(event: AccessibilityEvent?) {}
+    override fun onInterrupt() {}
+    override fun onDestroy() {
+        super.onDestroy()
+        instance = null
+        _isServiceActive.value = false
+    }
 }`,
     },
     'SpeechRecognizerManager.kt': {
