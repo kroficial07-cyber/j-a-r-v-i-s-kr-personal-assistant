@@ -22,29 +22,76 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
           cache: 'gradle'
-          cache-dependency-path: 'android/**/*.gradle*'
 
-      - name: Verify Gradle Wrapper Jar
+      - name: Detect Android Project Location & Configure Wrapper
         run: |
-          if [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
-            echo "AVISO: gradle-wrapper.jar ausente na pasta android/gradle/wrapper/. Baixando wrapper oficial..."
-            mkdir -p android/gradle/wrapper
-            curl -sSL -o android/gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar
+          if [ -f "android/gradlew" ]; then
+            echo "PROJECT_DIR=android" >> $GITHUB_ENV
+            P_DIR="android"
+          elif [ -f "gradlew" ]; then
+            echo "PROJECT_DIR=." >> $GITHUB_ENV
+            P_DIR="."
           else
-            echo "gradle-wrapper.jar verificado com sucesso."
+            echo "::error::Não foi possível encontrar o arquivo gradlew nem na raiz nem em android/."
+            exit 1
           fi
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x android/gradlew
+          echo "Diretório do projeto detectado: $P_DIR"
+
+          WRAPPER_JAR="$P_DIR/gradle/wrapper/gradle-wrapper.jar"
+          if [ ! -f "$WRAPPER_JAR" ] || [ ! -s "$WRAPPER_JAR" ]; then
+            echo "AVISO: $WRAPPER_JAR ausente ou vazio. Baixando wrapper oficial Gradle 8.2..."
+            mkdir -p "$P_DIR/gradle/wrapper"
+            curl -sSL -o "$WRAPPER_JAR" https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar
+          else
+            echo "gradle-wrapper.jar validado com sucesso."
+          fi
+
+          chmod +x "$P_DIR/gradlew"
+
+      - name: Accept Android SDK Licenses
+        run: |
+          if [ -n "$ANDROID_HOME" ] && [ -x "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" ]; then
+            yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          fi
 
       - name: Build Debug APK with Gradle
-        working-directory: android
-        run: ./gradlew assembleDebug --stacktrace
+        id: gradle_build
+        run: |
+          cd "$PROJECT_DIR"
+          set -o pipefail
+          ./gradlew assembleDebug --stacktrace --no-daemon --console=plain 2>&1 | tee build.log
+
+      - name: Diagnostic Error Report (em caso de falha)
+        if: failure()
+        run: |
+          echo "### ⚠️ Falha na Compilação do Gradle" >> $GITHUB_STEP_SUMMARY
+          echo "Análise dos primeiros erros capturados no log:" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          LOG_FILE="$PROJECT_DIR/build.log"
+          if [ -f "$LOG_FILE" ]; then
+            grep -E "(e: |FAILURE:|Caused by:|Compilation error|What went wrong:)" -A 4 "$LOG_FILE" | head -n 45 >> $GITHUB_STEP_SUMMARY || true
+          else
+            echo "Arquivo build.log não encontrado para extração de erros." >> $GITHUB_STEP_SUMMARY
+          fi
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Debug APK Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: jarvis-kr-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          path: '**/build/outputs/apk/debug/*.apk'
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload Build Log and Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-error-reports
+          path: |
+            **/build.log
+            **/build/reports/
+          if-no-files-found: warn
+          retention-days: 7

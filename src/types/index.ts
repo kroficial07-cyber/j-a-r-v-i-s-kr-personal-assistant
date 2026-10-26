@@ -77,4 +77,13 @@ export interface AppSettings {
   lastMissionsRenewalDate: string;
 }
 
-export type ActiveTab = 'home' | 'chat' | 'missions' | 'memory' | 'automations' | 'settings' | 'kotlin_source';
+export type ActiveTab = 
+  | 'home' 
+  | 'chat' 
+  | 'missions' 
+  | 'drive' 
+  | 'gmail' 
+  | 'memory' 
+  | 'automations' 
+  | 'settings' 
+  | 'kotlin_source';

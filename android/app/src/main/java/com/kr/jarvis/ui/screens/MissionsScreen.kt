@@ -40,7 +40,7 @@ fun MissionsScreen(
 
     val completedCount = missions.count { it.completed }
     val totalCount = missions.size
-    val progress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
+    val missionProgress = if (totalCount > 0) completedCount.toFloat() / totalCount else 0f
 
     Column(
         modifier = modifier
@@ -100,11 +100,11 @@ fun MissionsScreen(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Text(text = "CONFORMIDADE OPERACIONAL", style = MaterialTheme.typography.labelSmall)
-                    Text(text = "${(progress * 100).toInt()}% CONCLUÍDO", color = JarvisCyanBright, style = MaterialTheme.typography.labelSmall)
+                    Text(text = "${(missionProgress * 100).toInt()}% CONCLUÍDO", color = JarvisCyanBright, style = MaterialTheme.typography.labelSmall)
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
-                    progress = progress,
+                    progress = missionProgress,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(6.dp)

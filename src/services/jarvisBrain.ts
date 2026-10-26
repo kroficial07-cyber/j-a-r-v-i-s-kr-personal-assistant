@@ -3,7 +3,8 @@ import { MemoryItem, MissionTask } from '../types';
 
 export interface JarvisActionResponse {
   replyText: string;
-  actionTaken?: 'task_added' | 'memory_added' | 'task_completed' | 'diagnostics_run' | 'none';
+  actionTaken?: 'task_added' | 'memory_added' | 'task_completed' | 'diagnostics_run' | 'navigate' | 'none';
+  navigateToTab?: 'home' | 'chat' | 'missions' | 'drive' | 'gmail' | 'memory' | 'automations' | 'settings' | 'kotlin_source';
   updatedTasks?: MissionTask[];
   updatedMemories?: MemoryItem[];
 }
@@ -218,7 +219,42 @@ export function processJarvisCommand(input: string): JarvisActionResponse {
     };
   }
 
-  // 9. AUTOMATIONS & ACCESSIBILITY SERVICE
+  // 9. GOOGLE DRIVE COMMANDS
+  if (
+    lower.includes('drive') ||
+    lower.includes('google drive') ||
+    lower.includes('meus arquivos') ||
+    lower.includes('listar arquivos') ||
+    lower.includes('documentos na nuvem') ||
+    lower.includes('buscar arquivo') ||
+    lower.includes('abrir drive')
+  ) {
+    return {
+      replyText: `Acessando o subsistema do Google Drive, Senhor ${userName}. Redirecionando para o terminal de arquivos na nuvem.`,
+      actionTaken: 'navigate',
+      navigateToTab: 'drive',
+    };
+  }
+
+  // 10. GMAIL COMMANDS
+  if (
+    lower.includes('gmail') ||
+    lower.includes('email') ||
+    lower.includes('e-mail') ||
+    lower.includes('caixa de entrada') ||
+    lower.includes('mensagens') ||
+    lower.includes('meus emails') ||
+    lower.includes('enviar email') ||
+    lower.includes('ler email')
+  ) {
+    return {
+      replyText: `Acessando a central do Gmail, Senhor ${userName}. Redirecionando para o painel de mensagens e correspondências.`,
+      actionTaken: 'navigate',
+      navigateToTab: 'gmail',
+    };
+  }
+
+  // 11. AUTOMATIONS & ACCESSIBILITY SERVICE
   if (
     lower.includes('automação') ||
     lower.includes('automacao') ||
@@ -232,7 +268,7 @@ export function processJarvisCommand(input: string): JarvisActionResponse {
     };
   }
 
-  // 10. HELP / CAPABILITIES
+  // 12. HELP / CAPABILITIES
   if (
     lower.includes('ajuda') ||
     lower.includes('o que você faz') ||
@@ -240,7 +276,7 @@ export function processJarvisCommand(input: string): JarvisActionResponse {
     lower.includes('comandos')
   ) {
     return {
-      replyText: `Estou ao seu dispor, Senhor ${userName}. Posso gerenciar suas missões diárias, arquivar notas em sua memória local, ler respostas por voz em português, fornecer diagnósticos em tempo real e orquestrar rotinas de automação preparadas para o Android nativo. Experimente dizer: "Status do sistema", "Minhas tarefas", ou "Lembre-se que preciso revisar o código".`,
+      replyText: `Estou ao seu dispor, Senhor ${userName}. Posso gerenciar suas missões diárias, consultar seu Google Drive, verificar e enviar mensagens no Gmail, arquivar notas em sua memória local, ler respostas por voz em português, fornecer diagnósticos em tempo real e orquestrar rotinas de automação preparadas para o Android nativo. Experimente dizer: "Abrir Google Drive", "Ver meus emails", "Status do sistema", ou "Lembre-se que preciso revisar o código".`,
       actionTaken: 'none',
     };
   }

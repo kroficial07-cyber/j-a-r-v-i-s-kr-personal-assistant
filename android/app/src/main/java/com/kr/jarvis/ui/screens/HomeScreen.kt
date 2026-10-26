@@ -38,7 +38,7 @@ fun HomeScreen(
 
     val completedMissions = missions.count { it.completed }
     val totalMissions = missions.size
-    val progress = if (totalMissions > 0) completedMissions.toFloat() / totalMissions else 0f
+    val missionProgress = if (totalMissions > 0) completedMissions.toFloat() / totalMissions else 0f
 
     val quickCommands = listOf(
         "Status do sistema",
@@ -180,7 +180,7 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(text = "MISSÕES", style = MaterialTheme.typography.labelSmall)
-                        Text(text = "${(progress * 100).toInt()}%", color = JarvisCyanBright, fontSize = 11.sp)
+                        Text(text = "${(missionProgress * 100).toInt()}%", color = JarvisCyanBright, fontSize = 11.sp)
                     }
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
@@ -190,7 +190,7 @@ fun HomeScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     LinearProgressIndicator(
-                        progress = progress,
+                        progress = missionProgress,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(4.dp)

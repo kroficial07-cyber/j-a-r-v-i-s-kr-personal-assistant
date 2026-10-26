@@ -20,6 +20,9 @@ import { MemoryScreen } from './components/MemoryScreen';
 import { AutomationsScreen } from './components/AutomationsScreen';
 import { SettingsScreen } from './components/SettingsScreen';
 import { KotlinSourceScreen } from './components/KotlinSourceScreen';
+import { DriveScreen } from './components/DriveScreen';
+import { GmailScreen } from './components/GmailScreen';
+import { subscribeToWorkspaceAuth, isWorkspaceConnected } from './services/workspaceAuth';
 
 import {
   Home,
@@ -36,6 +39,8 @@ import {
   AlertCircle,
   X,
   Download,
+  HardDrive,
+  Mail,
 } from 'lucide-react';
 
 export default function App() {
@@ -53,6 +58,14 @@ export default function App() {
     return missions;
   });
   const [automations, setAutomations] = useState<AutomationRule[]>(() => storageService.getAutomations());
+  const [workspaceConnected, setWorkspaceConnected] = useState<boolean>(() => isWorkspaceConnected());
+
+  useEffect(() => {
+    const unsubscribe = subscribeToWorkspaceAuth((_user, token) => {
+      setWorkspaceConnected(!!token);
+    });
+    return unsubscribe;
+  }, []);
 
   // Frame toggle: Phone frame vs Fullscreen on desktop
   const [showDeviceFrame, setShowDeviceFrame] = useState<boolean>(false);
@@ -123,6 +136,9 @@ export default function App() {
         }
         if (result.updatedMemories) {
           setMemories(result.updatedMemories);
+        }
+        if (result.navigateToTab) {
+          setActiveTab(result.navigateToTab);
         }
 
         // Play feedback
@@ -302,6 +318,8 @@ export default function App() {
     { id: 'home', label: 'Início', icon: Home },
     { id: 'chat', label: 'Conversa', icon: MessageSquare },
     { id: 'missions', label: 'Missões', icon: CheckSquare },
+    { id: 'drive', label: 'Drive', icon: HardDrive },
+    { id: 'gmail', label: 'Gmail', icon: Mail },
     { id: 'memory', label: 'Memória', icon: Brain },
     { id: 'automations', label: 'Automação', icon: Sliders },
     { id: 'settings', label: 'Config', icon: Settings },
@@ -350,6 +368,10 @@ export default function App() {
             onRenewDailyMissions={handleRenewDailyMissions}
           />
         );
+      case 'drive':
+        return <DriveScreen onShowToast={showToast} />;
+      case 'gmail':
+        return <GmailScreen onShowToast={showToast} />;
       case 'memory':
         return (
           <MemoryScreen
@@ -391,10 +413,24 @@ export default function App() {
             J.A.R.V.I.S. — KR PERSONAL ASSISTANT
           </span>
           <span className="text-slate-600">|</span>
-          <span>ARQUITETURA ANDROID JETPACK COMPOSE & WEB ENGINE</span>
+          <span>GOOGLE WORKSPACE & ANDROID JETPACK COMPOSE</span>
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Google Workspace status indicator pill */}
+          <button
+            onClick={() => setActiveTab('drive')}
+            title={workspaceConnected ? 'Google Workspace sincronizado' : 'Clique para conectar Google Workspace'}
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded border text-[11px] font-mono transition-colors cursor-pointer ${
+              workspaceConnected
+                ? 'bg-emerald-950/50 border-emerald-500/40 text-emerald-300'
+                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-cyan-300'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${workspaceConnected ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}`} />
+            <span>Workspace: {workspaceConnected ? 'Conectado' : 'Conectar'}</span>
+          </button>
+
           {/* Download Android Project ZIP */}
           <a
             href="/jarvis-kr-android-project.zip"
@@ -500,7 +536,7 @@ export default function App() {
             showDeviceFrame ? 'absolute bottom-0 left-0 right-0' : 'fixed bottom-0 left-0 right-0'
           } z-40 bg-slate-950/95 backdrop-blur-md border-t border-slate-800/80 pb-safe`}
         >
-          <div className="max-w-2xl mx-auto flex items-center justify-around h-16 px-1">
+          <div className="max-w-4xl mx-auto flex items-center justify-between sm:justify-around h-16 px-2 overflow-x-auto scrollbar-none gap-0.5">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;

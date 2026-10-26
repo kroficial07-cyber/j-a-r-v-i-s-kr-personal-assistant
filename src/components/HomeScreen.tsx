@@ -12,6 +12,8 @@ import {
   Cpu,
   Sparkles,
   Zap,
+  HardDrive,
+  Mail,
 } from 'lucide-react';
 
 interface HomeScreenProps {
@@ -74,9 +76,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const quickPrompts = [
     'Status do sistema',
+    'Abrir Google Drive',
+    'Ver meus emails',
     'Relatório matinal',
     'Que dia é hoje',
-    'Quem sou eu',
     'Ajuda',
   ];
 
@@ -201,6 +204,52 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </div>
           <div className="text-[11px] text-slate-400 truncate mt-1">
             Preferências & notas do KR
+          </div>
+        </div>
+
+        {/* Google Drive card */}
+        <div
+          onClick={() => {
+            audioSynthesizer.playTap();
+            onNavigateToTab('drive');
+          }}
+          className="bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-3.5 cursor-pointer transition-all active:scale-[0.98]"
+        >
+          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+            <span className="flex items-center gap-1.5">
+              <HardDrive className="w-3.5 h-3.5 text-emerald-400" />
+              GOOGLE DRIVE
+            </span>
+            <span className="text-emerald-400 font-bold">CLOUD</span>
+          </div>
+          <div className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            Arquivos na Nuvem
+          </div>
+          <div className="text-[11px] text-slate-400 truncate mt-1">
+            Docs, planilhas e notas
+          </div>
+        </div>
+
+        {/* Gmail card */}
+        <div
+          onClick={() => {
+            audioSynthesizer.playTap();
+            onNavigateToTab('gmail');
+          }}
+          className="bg-slate-900/80 border border-slate-800 hover:border-cyan-500/40 rounded-xl p-3.5 cursor-pointer transition-all active:scale-[0.98]"
+        >
+          <div className="flex items-center justify-between text-xs text-slate-400 font-mono mb-1">
+            <span className="flex items-center gap-1.5">
+              <Mail className="w-3.5 h-3.5 text-cyan-400" />
+              GMAIL TERMINAL
+            </span>
+            <span className="text-cyan-400 font-bold">INBOX</span>
+          </div>
+          <div className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            Mensagens & Envio
+          </div>
+          <div className="text-[11px] text-slate-400 truncate mt-1">
+            Leitura e resposta segura
           </div>
         </div>
       </section>
