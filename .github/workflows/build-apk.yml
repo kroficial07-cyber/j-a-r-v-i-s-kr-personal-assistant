@@ -21,30 +21,50 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
-          cache-dependency-path: 'android/**/*.gradle*'
 
-      - name: Verify Gradle Wrapper Jar
-        run: |
-          if [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
-            echo "AVISO: gradle-wrapper.jar ausente na pasta android/gradle/wrapper/. Baixando wrapper oficial..."
-            mkdir -p android/gradle/wrapper
-            curl -sSL -o android/gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar
-          else
-            echo "gradle-wrapper.jar verificado com sucesso."
-          fi
+      - name: Set up Gradle & Cache
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          build-root-directory: android
+          cache-read-only: false
 
       - name: Grant execute permission for gradlew
         run: chmod +x android/gradlew
 
       - name: Build Debug APK with Gradle
+        id: gradle_build
         working-directory: android
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew assembleDebug --stacktrace --console=plain 2>&1 | tee build.log
+
+      - name: Diagnostic Error Report (em caso de falha)
+        if: failure()
+        run: |
+          echo "### ⚠️ Falha na Compilação do Gradle" >> $GITHUB_STEP_SUMMARY
+          echo "Extraindo os primeiros erros reais do compilador..." >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          if [ -f "android/build.log" ]; then
+            grep -E "(e: |FAILURE:|Caused by:|Compilation error|What went wrong:)" -A 4 android/build.log | head -n 40 >> $GITHUB_STEP_SUMMARY || true
+          fi
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       - name: Upload Debug APK Artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: jarvis-kr-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+
+      - name: Upload Build Log and Reports on Failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gradle-error-reports
+          path: |
+            android/build.log
+            android/app/build/reports/
+          if-no-files-found: warn
+          retention-days: 7
