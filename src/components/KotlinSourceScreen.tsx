@@ -271,30 +271,58 @@ object AppLauncher {
 }`,
     },
     'build-apk.yml': {
-      desc: 'GitHub Actions para compilar o APK na nuvem de graça pelo navegador',
-      path: 'android/.github/workflows/build-apk.yml',
+      desc: 'GitHub Actions na raiz para compilar o APK na nuvem de graça (diretório android/)',
+      path: '.github/workflows/build-apk.yml',
       code: `name: Build J.A.R.V.I.S. APK
+
 on:
-  workflow_dispatch:
   push:
     branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
+    name: Build Android APK
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
-      - run: chmod +x gradlew
-      - run: ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+          cache: 'gradle'
+          cache-dependency-path: 'android/**/*.gradle*'
+
+      - name: Verify Gradle Wrapper Jar
+        run: |
+          if [ ! -f "android/gradle/wrapper/gradle-wrapper.jar" ]; then
+            echo "AVISO: gradle-wrapper.jar ausente na pasta android/gradle/wrapper/. Baixando wrapper oficial..."
+            mkdir -p android/gradle/wrapper
+            curl -sSL -o android/gradle/wrapper/gradle-wrapper.jar https://raw.githubusercontent.com/gradle/gradle/v8.2.0/gradle/wrapper/gradle-wrapper.jar
+          else
+            echo "gradle-wrapper.jar verificado com sucesso."
+          fi
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      - name: Build Debug APK with Gradle
+        working-directory: android
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: jarvis-kr-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk`,
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14`,
     },
     'build.gradle.kts': {
       desc: 'Configuração Gradle do módulo com Compose 1.5.8, Room 2.6.1 e SDK 34',
