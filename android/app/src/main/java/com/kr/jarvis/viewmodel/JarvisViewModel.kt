@@ -40,6 +40,9 @@ class JarvisViewModel(application: Application) : AndroidViewModel(application) 
     private val repository: JarvisRepository
     private val speechRecognizerManager: SpeechRecognizerManager
     private val ttsManager: TtsManager
+    val brain: com.kr.jarvis.core.JarvisBrain
+
+    val focusState = com.kr.jarvis.modules.focus.FocusRoutineManager.focusState
 
     private val _uiState = MutableStateFlow(JarvisUiState())
     val uiState: StateFlow<JarvisUiState> = _uiState.asStateFlow()
@@ -52,6 +55,7 @@ class JarvisViewModel(application: Application) : AndroidViewModel(application) 
     init {
         val database = JarvisDatabase.getDatabase(application, viewModelScope)
         repository = JarvisRepository(database.jarvisDao())
+        brain = com.kr.jarvis.core.JarvisBrain(application, repository)
 
         messages = repository.allMessages.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
         memories = repository.allMemories.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -172,65 +176,13 @@ class JarvisViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private suspend fun generateJarvisResponse(text: String): String {
-        val lower = text.lowercase(Locale.ROOT)
-        val name = _uiState.value.userName
-
-        return when {
-            lower.contains("status") || lower.contains("diagnóstico") -> {
-                val missionList = missions.value
-                val pend = missionList.count { !it.completed }
-                val memCount = memories.value.size
-                val accRunning = JarvisAccessibilityService.isRunning
-                "Diagnóstico operacional: Núcleo neural 100%. Missões pendentes: $pend. Memórias locais: $memCount. Acessibilidade Android: ${if (accRunning) "Ativa" else "Aguardando ativação em Configurações"}."
-            }
-            lower.contains("horas") || lower.contains("que horas") -> {
-                "São exatamente ${_uiState.value.currentTimeFormatted}, Senhor $name."
-            }
-            lower.contains("tarefas") || lower.contains("missões") -> {
-                val pends = missions.value.filter { !it.completed }
-                if (pends.isEmpty()) {
-                    "Excelente, Senhor $name! Todas as missões do dia foram concluídas."
-                } else {
-                    val titles = pends.take(3).joinToString("; ") { it.title }
-                    "Senhor $name, você possui ${pends.size} missões pendentes. Principais: $titles."
-                }
-            }
-            lower.startsWith("abrir ") -> {
-                val app = lower.removePrefix("abrir ").trim()
-                if (app.contains("whatsapp")) {
-                    val res = AppLauncher.launchPackage(getApplication(), "com.whatsapp")
-                    res.second
-                } else if (app.contains("youtube")) {
-                    val res = AppLauncher.launchPackage(getApplication(), "com.google.android.youtube")
-                    res.second
-                } else if (app.contains("spotify")) {
-                    val res = AppLauncher.launchPackage(getApplication(), "com.spotify.music")
-                    res.second
-                } else if (app.contains("mapas") || app.contains("maps")) {
-                    val res = AppLauncher.launchPackage(getApplication(), "com.google.android.apps.maps")
-                    res.second
-                } else {
-                    "Comando para abrir '$app' registrado. Configure o pacote específico nas automações."
-                }
-            }
-            lower.startsWith("lembre-se que ") || lower.startsWith("anote ") -> {
-                val content = text.replace(Regex("^(?:jarvis\\s+)?(?:lembre-se que|anote)\\s+", RegexOption.IGNORE_CASE), "")
-                val now = System.currentTimeMillis()
-                repository.insertMemory(
-                    MemoryEntity("mem_$now", "Nota por comando vocal", content, "nota", now, now)
-                )
-                "Afirmativo, Senhor $name. Guardei na memória permanente: \"$content\"."
-            }
-            lower.contains("quem sou eu") || lower.contains("meu nome") -> {
-                "O senhor é $name, meu criador e usuário mestre do sistema J.A.R.V.I.S."
-            }
-            lower.contains("olá") || lower.contains("ola") || lower.contains("oi") -> {
-                "${_uiState.value.greeting}, Senhor $name. Sistemas calibrados e operando. Como posso auxiliá-lo?"
-            }
-            else -> {
-                "Compreendido, Senhor $name. Registrei sua mensagem: \"$text\". Às suas ordens para a próxima ação."
-            }
-        }
+        val plan = brain.processRequest(
+            input = text,
+            userName = _uiState.value.userName,
+            activeMemories = memories.value,
+            activeMissions = missions.value
+        )
+        return plan.responseText
     }
 
     fun speak(text: String) {

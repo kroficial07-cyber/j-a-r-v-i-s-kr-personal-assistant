@@ -39,10 +39,13 @@ fun JarvisAppRoot(
     val navItems = listOf(
         NavItem("Início", Icons.Default.Home, 0),
         NavItem("Conversa", Icons.Default.ChatBubble, 1),
-        NavItem("Missões", Icons.Default.AssignmentTurnedIn, 2),
-        NavItem("Memória", Icons.Default.Psychology, 3),
-        NavItem("Automação", Icons.Default.AltRoute, 4),
-        NavItem("Config", Icons.Default.Settings, 5)
+        NavItem("KR Digital", Icons.Default.SupportAgent, 2),
+        NavItem("Criador", Icons.Default.Movie, 3),
+        NavItem("Foco", Icons.Default.Timer, 4),
+        NavItem("Missões", Icons.Default.AssignmentTurnedIn, 5),
+        NavItem("Memória", Icons.Default.Psychology, 6),
+        NavItem("Automação", Icons.Default.AltRoute, 7),
+        NavItem("Config", Icons.Default.Settings, 8)
     )
 
     Scaffold(
@@ -50,33 +53,33 @@ fun JarvisAppRoot(
         containerColor = JarvisBackground,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
-            NavigationBar(
+            ScrollableTabRow(
+                selectedTabIndex = selectedTab,
                 containerColor = JarvisSurface,
-                tonalElevation = 8.dp,
-                modifier = Modifier.height(68.dp)
+                contentColor = JarvisCyanBright,
+                edgePadding = 8.dp,
+                modifier = Modifier.height(64.dp)
             ) {
                 navItems.forEach { item ->
                     val isSelected = selectedTab == item.index
-                    NavigationBarItem(
+                    Tab(
                         selected = isSelected,
                         onClick = { selectedTab = item.index },
+                        text = {
+                            Text(
+                                text = item.label,
+                                fontSize = 11.sp,
+                                color = if (isSelected) JarvisCyanBright else JarvisTextSecondary
+                            )
+                        },
                         icon = {
                             Icon(
                                 imageVector = item.icon,
                                 contentDescription = item.label,
-                                tint = if (isSelected) JarvisCyanBright else JarvisTextSecondary
+                                tint = if (isSelected) JarvisCyanBright else JarvisTextSecondary,
+                                modifier = Modifier.size(18.dp)
                             )
-                        },
-                        label = {
-                            Text(
-                                text = item.label,
-                                fontSize = 10.sp,
-                                color = if (isSelected) JarvisCyanBright else JarvisTextSecondary
-                            )
-                        },
-                        colors = NavigationBarItemDefaults.colors(
-                            indicatorColor = JarvisSurfaceVariant
-                        )
+                        }
                     )
                 }
             }
@@ -90,10 +93,13 @@ fun JarvisAppRoot(
             when (selectedTab) {
                 0 -> HomeScreen(viewModel = viewModel, onNavigateToTab = { selectedTab = it })
                 1 -> ChatScreen(viewModel = viewModel)
-                2 -> MissionsScreen(viewModel = viewModel)
-                3 -> MemoryScreen(viewModel = viewModel)
-                4 -> AutomationsScreen(viewModel = viewModel)
-                5 -> SettingsScreen(viewModel = viewModel)
+                2 -> KrDigitalScreen(viewModel = viewModel)
+                3 -> ContentCreatorScreen(viewModel = viewModel)
+                4 -> FocusScreen(viewModel = viewModel)
+                5 -> MissionsScreen(viewModel = viewModel)
+                6 -> MemoryScreen(viewModel = viewModel)
+                7 -> AutomationsScreen(viewModel = viewModel)
+                8 -> SettingsScreen(viewModel = viewModel)
             }
         }
     }

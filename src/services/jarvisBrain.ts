@@ -268,7 +268,65 @@ export function processJarvisCommand(input: string): JarvisActionResponse {
     };
   }
 
-  // 12. HELP / CAPABILITIES
+  // 11. KR DIGITAL MODULE
+  if (
+    lower.includes('analisa essa conversa') ||
+    lower.includes('analisar conversa') ||
+    lower.includes('conversa com cliente') ||
+    lower.includes('proposta comercial') ||
+    lower.includes('orçamento kr') ||
+    lower.includes('orcamento kr')
+  ) {
+    if (lower.includes('proposta') || lower.includes('orçamento') || lower.includes('orcamento')) {
+      return {
+        replyText: `Senhor ${userName}, estruturei o rascunho de proposta para a KR Digital: Escopo para Site Institucional com SEO e Integração de WhatsApp. Prazo: 8 dias úteis. Entregas: 1. Design Mobile-First; 2. Otimização SEO; 3. Botão WhatsApp; 4. SSL incluso. Pronto para visualização no painel KR Digital.`,
+        actionTaken: 'none',
+      };
+    } else {
+      return {
+        replyText: `Análise comercial da conversa executada para a KR Digital, Senhor ${userName}. Estágio detectado: Qualificação / Apresentação de Solução. Recomendação: Evite insistência comercial; apresente a velocidade de entrega e o impacto de ter um site responsivo com botão de WhatsApp.`,
+        actionTaken: 'none',
+      };
+    }
+  }
+
+  // 12. CONTENT CREATION MODULE
+  if (
+    lower.includes('ideia de vídeo') ||
+    lower.includes('ideia de video') ||
+    lower.includes('roteiro') ||
+    lower.includes('gancho') ||
+    lower.includes('tiktok') ||
+    lower.includes('reels') ||
+    lower.includes('youtube')
+  ) {
+    if (lower.includes('roteiro')) {
+      return {
+        replyText: `Roteiro de alta retenção estruturado, Senhor ${userName}. Gancho dos primeiros 3 segundos: "Pare de perder tempo com tarefas manuais antes de ver este vídeo!". Estrutura: 1. Gancho de padrão; 2. O problema oculto; 3. Os 3 passos de automação; 4. CTA final para inscrição.`,
+        actionTaken: 'none',
+      };
+    } else {
+      return {
+        replyText: `Ideias de alta retenção geradas para o Senhor ${userName}: 1. "O erro que 90% das pessoas cometem ao organizar rotinas"; 2. "Como usei automação para poupar 2 horas diárias no Android"; 3. "3 ferramentas gratuitas que transformam o celular em máquina de trabalho".`,
+        actionTaken: 'none',
+      };
+    }
+  }
+
+  // 13. FOCUS MODE MODULE
+  if (
+    lower.includes('modo foco') ||
+    lower.includes('iniciar foco') ||
+    lower.includes('estudar') ||
+    lower.includes('pomodoro')
+  ) {
+    return {
+      replyText: `Modo Foco Deep Work iniciado para o Senhor ${userName} (25 minutos). Protocolo de segurança ativo: chamadas de emergência (190, 192, 193) e discador telefônico permanecem 100% liberados e prioritários.`,
+      actionTaken: 'none',
+    };
+  }
+
+  // 14. HELP / CAPABILITIES
   if (
     lower.includes('ajuda') ||
     lower.includes('o que você faz') ||
@@ -276,7 +334,7 @@ export function processJarvisCommand(input: string): JarvisActionResponse {
     lower.includes('comandos')
   ) {
     return {
-      replyText: `Estou ao seu dispor, Senhor ${userName}. Posso gerenciar suas missões diárias, consultar seu Google Drive, verificar e enviar mensagens no Gmail, arquivar notas em sua memória local, ler respostas por voz em português, fornecer diagnósticos em tempo real e orquestrar rotinas de automação preparadas para o Android nativo. Experimente dizer: "Abrir Google Drive", "Ver meus emails", "Status do sistema", ou "Lembre-se que preciso revisar o código".`,
+      replyText: `Estou ao seu dispor, Senhor ${userName}. Módulos ativos: 1. KR Digital (análise de conversas e propostas); 2. Criador de Conteúdo (ideias e roteiros); 3. Modo Foco & Estudos; 4. Gestor de Missões e Memória Permanente; 5. Integração com Google Drive e Gmail; 6. Acessibilidade nativa Android com comandos hands-free.`,
       actionTaken: 'none',
     };
   }

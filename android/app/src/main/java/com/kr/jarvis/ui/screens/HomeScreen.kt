@@ -42,9 +42,12 @@ fun HomeScreen(
 
     val quickCommands = listOf(
         "Status do sistema",
-        "Relatório matinal",
+        "Modo foco",
+        "Analisa essa conversa com cliente",
+        "Ideia de vídeo",
+        "Roteiro curto",
+        "Proposta comercial",
         "Que horas são",
-        "Quem sou eu",
         "Abrir WhatsApp",
         "Minhas tarefas"
     )
@@ -171,7 +174,7 @@ fun HomeScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(JarvisSurface)
                     .border(1.dp, JarvisBorder, RoundedCornerShape(16.dp))
-                    .clickable { onNavigateToTab(2) } // Missions tab
+                    .clickable { onNavigateToTab(5) } // Missions tab
                     .padding(12.dp)
             ) {
                 Column {
@@ -208,7 +211,7 @@ fun HomeScreen(
                     .clip(RoundedCornerShape(16.dp))
                     .background(JarvisSurface)
                     .border(1.dp, JarvisBorder, RoundedCornerShape(16.dp))
-                    .clickable { onNavigateToTab(3) } // Memory tab
+                    .clickable { onNavigateToTab(6) } // Memory tab
                     .padding(12.dp)
             ) {
                 Column {
@@ -231,6 +234,59 @@ fun HomeScreen(
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 11.sp
                     )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Module Quick Access Tiles
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = JarvisSurface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, JarvisBorder),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onNavigateToTab(2) }
+            ) {
+                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.SupportAgent, contentDescription = null, tint = JarvisCyan, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("KR Digital", fontSize = 11.sp, color = Color.White, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = JarvisSurface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, JarvisBorder),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onNavigateToTab(3) }
+            ) {
+                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Movie, contentDescription = null, tint = JarvisCyan, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Criador", fontSize = 11.sp, color = Color.White, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = JarvisSurface,
+                border = androidx.compose.foundation.BorderStroke(1.dp, JarvisBorder),
+                modifier = Modifier
+                    .weight(1f)
+                    .clickable { onNavigateToTab(4) }
+            ) {
+                Column(modifier = Modifier.padding(10.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(Icons.Default.Timer, contentDescription = null, tint = JarvisCyan, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Modo Foco", fontSize = 11.sp, color = Color.White, style = MaterialTheme.typography.titleMedium)
                 }
             }
         }

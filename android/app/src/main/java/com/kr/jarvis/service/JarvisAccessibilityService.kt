@@ -101,6 +101,12 @@ class JarvisAccessibilityService : AccessibilityService() {
         when (event.eventType) {
             AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED -> {
                 Log.d(TAG, "Janela alterada no pacote: $packageName (${event.className})")
+
+                // Verificação de contenção durante Modo Foco (Proteção de emergência estrita)
+                if (com.kr.jarvis.modules.focus.FocusRoutineManager.shouldBlockPackage(packageName)) {
+                    Log.i(TAG, "Modo Foco Ativo: Contendo app de distração ($packageName). Retornando ao Início.")
+                    performGlobalAction(GLOBAL_ACTION_HOME)
+                }
             }
             AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED -> {
                 Log.d(TAG, "Notificação detectada para automação no pacote: $packageName")
